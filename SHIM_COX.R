@@ -173,7 +173,7 @@ shim_cox <- function(x, y, main.effect.names, interaction.names,
                                  interaction.names = interaction.names)
     out <- list(
                 beta = beta_hat_next,
-                alpha = Betas_and_Alphasp[interaction.names,],
+                alpha = Betas_and_Alphas[interaction.names,],
                 gamma = gamma_hat_next,
                 converged = converged, 
                 iteration.num = m,
