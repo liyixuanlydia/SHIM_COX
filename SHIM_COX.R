@@ -1,5 +1,5 @@
 
-lspath <- function(x, y, main.effect.names, interaction.names,
+shim_cox <- function(x, y, main.effect.names, interaction.names,
                    lambda.beta, lambda.gamma,
                    threshold, max.iter,
                    center, normalize) {
@@ -27,7 +27,8 @@ lspath <- function(x, y, main.effect.names, interaction.names,
   
    lambda_gamma <- lambda.gamma
    lambda_beta <- lambda.beta
-   # this converts the alphas to gammas (when some main term is 0 the interactions goes to 0)
+   
+   # this converts the alphas to gammas 
    uni_start <- convert(betas_and_alphas, main.effect.names = main.effect.names,
                         interaction.names = interaction.names)
 
@@ -165,9 +166,14 @@ lspath <- function(x, y, main.effect.names, interaction.names,
     
     beta_hat_previous <- beta_hat_next
     gamma_hat_previous <- gamma_hat_next
-   }
+  }
+    # Convert Gamma to Alpha
+    Betas_and_Alphas <- convert2(beta_hat_next, gamma_hat_next,
+                                 main.effect.names = main.effect.names,
+                                 interaction.names = interaction.names)
     out <- list(
                 beta = beta_hat_next,
+                alpha = Betas_and_Alphasp[interaction.names,],
                 gamma = gamma_hat_next,
                 converged = converged, 
                 iteration.num = m,
@@ -347,5 +353,49 @@ xtilde_mod <- function(interaction.names, data.main.effects, beta.main.effects,
 check_col_0 <- function(M) {
   M[, colSums(abs(M)) != 0, drop = F]
 }
+
+#' Convert gammas to alphas
+#'
+#' @description function that takes a vector of betas (which are the main
+#'   effects) and gammas and converts the alphas to gammas. This function is
+#'   used to calculate the linear predictor of the likelihood function (the Q
+#'   function in the fitting algorithm)
+#' @param betas.and.gammas q x 1 data.frame or matrix of betas and gamma
+#'   estimates. For example the output from the \code{convert} function. The
+#'   rownames must be appropriately labelled because these labels will be used
+#'   in other functions
+#' @inheritParams convert
+#' @return a labelled q x 1 data.frame of betas and alphas
+
+convert2 <- function(beta, gamma, main.effect.names, interaction.names,
+                     intercept = NULL) {
+  
+  betas.and.gammas <- rbind2(beta,gamma)
+  
+  # create output matrix
+  betas.and.alphas <- matrix(nrow = nrow(betas.and.gammas)) %>%
+    magrittr::set_rownames(rownames(betas.and.gammas))
+  
+  for (k in interaction.names) {
+    
+    # get names of main effects corresponding to interaction
+    main <- strsplit(rownames(betas.and.gammas[k, , drop = F]), ":")[[1]]
+    
+    # convert gamma to alpha
+    betas.and.alphas[k,] <- betas.and.gammas[k,]*prod(betas.and.gammas[main,])
+  }
+  
+  # add back the main effects which dont need to be transformed
+  for (j in main.effect.names) {
+    betas.and.alphas[j,] <- betas.and.gammas[j,]
+  }
+  
+  # add back intercept if it is non-NULL
+  if (!is.null(intercept)) betas.and.alphas["(Intercept)",] <- intercept
+  
+  return(betas.and.alphas)
+  
+}
+
 
 
