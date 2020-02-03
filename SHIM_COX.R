@@ -28,16 +28,16 @@ shim_cox <- function(x, y, main.effect.names, interaction.names,
    
    ## get adaptive weights
       # create output matrix
-      adaptive.weights <- matrix(nrow = nrow(betas.and.alphas)) %>%
-      magrittr::set_rownames(rownames(betas.and.alphas))
+      adaptive.weights <- matrix(nrow = nrow(betas_and_alphas)) %>%
+      magrittr::set_rownames(rownames(betas_and_alphas))
       # main effects weights
       for (j in main.effect.names) {
-        adaptive.weights[j,] <- abs(1/betas.and.alphas[j,])
+        adaptive.weights[j,] <- abs(1/betas_and_alphas[j,])
            }
       for (k in interaction.names) {
       # get names of main effects corresponding to interaction
-      main <- strsplit(rownames(betas.and.alphas[k, , drop = F]),":")[[1]]
-      adaptive.weights[k,] <- abs(prod(betas.and.alphas[main,])/betas.and.alphas[k,])
+      main <- strsplit(rownames(betas_and_alphas[k, , drop = F]),":")[[1]]
+      adaptive.weights[k,] <- abs(prod(betas_and_alphas[main,])/betas_and_alphas[k,])
            }
   
    lambda_gamma <- lambda.gamma
