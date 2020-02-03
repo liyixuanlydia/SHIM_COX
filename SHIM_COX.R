@@ -19,11 +19,26 @@ shim_cox <- function(x, y, main.effect.names, interaction.names,
    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    # Initialization step 2 of algortihm
    #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+   # get Initial value for betas and alphas
    betas_and_alphas <- as.matrix(
    coef(glmnet::glmnet(x = x, y = y, 
                        family = "cox",
                        alpha = 0,
                        standardize = F))[-1,,drop = F])
+   
+   ## get adaptive weights
+      # create output matrix
+      adaptive.weights <- matrix(nrow = nrow(betas.and.alphas)) %>%
+      magrittr::set_rownames(rownames(betas.and.alphas))
+      # main effects weights
+      for (j in main.effect.names) {
+        adaptive.weights[j,] <- abs(1/betas.and.alphas[j,])
+           }
+      for (k in interaction.names) {
+      # get names of main effects corresponding to interaction
+      main <- strsplit(rownames(betas.and.alphas[k, , drop = F]),":")[[1]]
+      adaptive.weights[k,] <- abs(prod(betas.and.alphas[main,])/betas.and.alphas[k,])
+           }
   
    lambda_gamma <- lambda.gamma
    lambda_beta <- lambda.beta
@@ -80,6 +95,7 @@ shim_cox <- function(x, y, main.effect.names, interaction.names,
         family = "cox", 
         offset = y_tilde,
         lambda = lambda_gamma,
+        penalty.factor = adaptive.weights[interaction.names,,drop=F],
         standardize = F, intercept = F))[-1,,drop = F])
     
     #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,6 +165,7 @@ shim_cox <- function(x, y, main.effect.names, interaction.names,
           family = "cox", 
           offset = y_tilde_2,
           lambda = lambda_beta,
+          penalty.factor = adaptive.weights[j,,drop=F],
           standardize = F, intercept = F))[-1,,drop = F])
   
       
@@ -396,6 +413,3 @@ convert2 <- function(beta, gamma, main.effect.names, interaction.names,
   return(betas.and.alphas)
   
 }
-
-
-
